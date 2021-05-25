@@ -49,7 +49,7 @@ class Var(Generic[_var_t]):
         extras = ["optional"] * self.optional
         extras += [f"default = {self.default}"] * bool(self.default)
         extras += [f"type = {self.type.__name__}"] * bool(self.type)
-        doc += f" [{','.join(extras)}]" if extras else ""
+        doc += f" [{', '.join(extras)}]" if extras else ""
         if self.help:
             doc += f"\n\t{self.help}"
         return doc
