@@ -40,7 +40,10 @@ class Server:
         cmd = f'{startup_script} {self.startup_args}'
 
         log.info("Launching %s", cmd)
-        self.process = await asyncio.create_subprocess_shell(cmd, stdin=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+        self.process = await asyncio.create_subprocess_shell(
+            cmd,
+            cwd=self.server_path,
+            stdin=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
 
         exitcode = await self.process.wait()
         stderr = await self.process.stderr.read()
@@ -49,3 +52,12 @@ class Server:
     @property
     def stdin(self) -> Optional[asyncio.StreamWriter]:
         return self.process.stdin if self.process else None
+
+    async def stop(self, kill_timeout: Optional[float] = 60):
+        # TODO: User-configurable input?
+        self.process.stdin.write(b'/stop\n')
+        try:
+            await asyncio.wait_for(self.process.wait(), timeout=kill_timeout)
+        except asyncio.TimeoutError:
+            log.error("Server failed to stop in time, killing it")
+            self.process.kill()
