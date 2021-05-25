@@ -1,6 +1,8 @@
 import os
 import asyncio
 import logging
+import zipfile
+import tempfile
 from pathlib import Path
 from typing import Optional, Tuple
 from . import env
@@ -18,6 +20,10 @@ class Server:
                              "(e.g. remove any blocking `readline` or `pause` calls in it)",
                              optional=True,
                              default="ServerStart.sh" if os.name != 'nt' else "ServerStart.bat")
+    save_folder = env.Var('CB_GAME_SAVE_FOLDER', type=Path,
+                          help="The folder where the game saves its data / worlds in (absolute)",
+                          optional=True,
+                          default=Path("world"))
     startup_args = env.Var('CB_GAME_STARTUP_ARGS', type=str,
                            help="Any arguments to be passed to the server startup script",
                            optional=True,
@@ -61,3 +67,16 @@ class Server:
         except asyncio.TimeoutError:
             log.error("Server failed to stop in time, killing it")
             self.process.kill()
+
+    def backup_saves(self, format: str = 'zip') -> Path:
+        base_name = self.save_folder.name
+        in_dir = self.server_path / self.save_folder
+        out_path = Path(tempfile.gettempdir()) / f'{base_name}.zip'
+
+        with zipfile.ZipFile(out_path, mode='w') as zipf:
+            for root, dirnames, filenames in os.walk(in_dir):
+                rel_root = os.path.relpath(root, in_dir)
+                for f in filenames:
+                    zipf.write(Path(root) / f, f'{base_name}/{rel_root}/{f}')
+
+        return out_path
