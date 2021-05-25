@@ -8,6 +8,16 @@ all_vars: Dict[str, 'Var[T]'] = {}
 _var_t = TypeVar('T')
 
 
+class VarError(Exception):
+    def __init__(self, what: str, var: 'Var[T]'):
+        super().__init__(what)
+        self.what: str = what
+        self.var: 'Var[T]' = var
+
+    def __str__(self) -> str:
+        return f"{self.what}\n{self.var}"
+
+
 class Var(Generic[_var_t]):
     def __init__(self,
                  key: str,
@@ -31,7 +41,7 @@ class Var(Generic[_var_t]):
         elif self.optional:
             self.value = self.default
         else:
-            raise KeyError(f"${{{self.key}}} not set\n{self}")
+            raise VarError(f"${{{self.key}}} not set", self)
 
     def __str__(self) -> str:
         doc = f"{self.key}"
