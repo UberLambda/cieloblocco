@@ -1,6 +1,7 @@
 import sys
 import logging
 import asyncio
+import threading
 from pathlib import Path
 
 logging.basicConfig(level=logging.INFO)
@@ -17,10 +18,6 @@ try:
     server = Server()
     bot = Bot(server=server)
 
-    async def backup_saves():
-        zip_path = server.backup_saves()
-        gdrive.upload_file(zip_path, zip_path.name)
-
     async def main():
         await bot.is_ready.wait()
 
@@ -34,8 +31,19 @@ try:
 
         if exitcode == 0:
             msg = await bot.message(tr("Backing up saves: {save}", save=server.save_folder.name))
-            backup_future = asyncio.ensure_future(backup_saves())
-            await backup_future
+
+            backup_done = asyncio.Event()
+
+            def backup_saves():
+                zip_path = server.backup_saves()
+                gdrive.upload_file(zip_path, zip_path.name)
+                backup_done.set()
+
+            backup_thread = threading.Thread(target=backup_saves)
+            backup_thread.start()
+            await backup_done.wait()
+            backup_thread.join()
+
             await msg.edit(content=tr("Done backing up: {save}", save=server.save_folder.name))
             await msg.add_reaction(bot.delete_reaction)
 

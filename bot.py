@@ -93,9 +93,14 @@ class Bot(Client):
         game_name = tr("{game} ({modpack})", game=self.server.game, modpack=self.server.modpack)
         await self.change_presence(activity=Game(name=game_name))
 
-        await self.message(tr("Server running, react to stop"), [self.stop_reaction])
+        self.running_message: Message = await self.message(tr("Server running, react to stop"), [self.stop_reaction])
 
     async def on_server_done(self, exitcode: int, stderr: str):
+        try:
+            await self.running_message.delete()
+        except:
+            log.exception("Could not delete 'Running' message")
+
         if exitcode == 0:
             log.info("Server done")
         else:
