@@ -1,4 +1,5 @@
 import os
+import builtins
 from typing import Any, Callable, Generic, TypeVar, Optional, Dict
 
 import dotenv
@@ -29,7 +30,7 @@ class Var(Generic[_var_t]):
         self.help: str = help
         self.default: Optional[_var_t] = default
         self.value: Optional[_var_t] = default
-        self.type: Optional[Callable[[str], _var_t]] = type or globals()['type'](default)
+        self.type: Optional[Callable[[str], _var_t]] = type or builtins.type(default)
         self.optional: bool = optional
         self.sync()
         all_vars[self.key] = self
