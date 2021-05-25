@@ -2,7 +2,7 @@ import os
 import asyncio
 import logging
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple
 from . import env
 
 log = logging.getLogger()
@@ -35,13 +35,16 @@ class Server:
         # TODO: Proper modpack name detection!
         return self.server_path.resolve().name
 
-    async def run(self) -> int:
+    async def run(self) -> Tuple[int, str]:
         startup_script = str(self.server_path / self.startup_script)
         cmd = f'{startup_script} {self.startup_args}'
 
         log.info("Launching %s", cmd)
-        self.process = await asyncio.create_subprocess_shell(cmd, stdin=asyncio.subprocess.PIPE)
-        return await self.process.wait()
+        self.process = await asyncio.create_subprocess_shell(cmd, stdin=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+
+        exitcode = await self.process.wait()
+        stderr = await self.process.stderr.read()
+        return exitcode, stderr.decode()
 
     @property
     def stdin(self) -> Optional[asyncio.StreamWriter]:

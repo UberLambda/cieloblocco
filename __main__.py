@@ -16,7 +16,9 @@ try:
     bot = Bot(server=server)
 
     async def main():
-        exitcode = await server.run()
+        await bot.wait_until_ready()
+        exitcode, stderr = await server.run()
+        await bot.on_server_done(exitcode, stderr)
 
     bot.loop.create_task(main())
     bot.run()
