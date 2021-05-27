@@ -85,7 +85,7 @@ $ source venv/bin/activate
 9. Copy the GDrive service account key .json to /etc/cieloblocco
     - And change its owner to `mc`, since the Python script (which is run by the `mc` user) needs to access it!
 10. Create a systemd unit for the service, e.g.:
-```toml
+```properties
 [Unit]
 Description=CieloBlocco server
 After=network.target network-online.target nss-lookup.target
