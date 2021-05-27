@@ -42,9 +42,16 @@ class Bot(Client):
         else:
             return name
 
+    async def nuke_past(self, limit: int = 100):
+        async for msg in self.channel.history(limit=limit):
+            if msg.author == self.user:
+                await msg.delete()
+
     async def on_ready(self):
         log.info('Bot ready: %s', self.user.name)
         self.channel: GuildChannel = self.get_channel(self.channel_id)
+
+        await self.nuke_past()
 
         self.delete_reaction: Emoji = self.find_emoji(self.delete_reaction)
         self.stop_reaction: Emoji = self.find_emoji(self.stop_reaction)
