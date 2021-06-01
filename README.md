@@ -82,6 +82,7 @@ $ source venv/bin/activate
         - `CB_DISCORD_CHANNEL_ID`: Discord ID of the text channel the bot is to send messages to
         - `CB_GDRIVE_CRED`: Path to the GDrive service account key .json
         - `CB_GDRIVE_ROOT_ID`: File ID of the folder shared with the service account
+        - `CB_GAME_CONTROL`: To setup rcon if needed (see the help of the `env.Var`)
 9. Copy the GDrive service account key .json to /etc/cieloblocco
     - And change its owner to `mc`, since the Python script (which is run by the `mc` user) needs to access it!
 10. Create a systemd unit for the service, e.g.:
