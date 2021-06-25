@@ -2,6 +2,7 @@ import sys
 import logging
 import asyncio
 import threading
+from datetime import datetime
 from pathlib import Path
 
 logging.basicConfig(level=logging.INFO)
@@ -36,9 +37,14 @@ try:
             msg = await bot.message(msg_intro)
 
             backup_done = asyncio.Event()
+            last_edit_time = datetime.now()
 
             def on_progress(progress):
-                asyncio.ensure_future(msg.edit(content=f'{msg_intro}\n{progress}'), loop=bot.loop)
+                nonlocal last_edit_time
+                now = datetime.now()
+                if (now - last_edit_time).seconds >= 2:
+                    asyncio.ensure_future(msg.edit(content=f'{msg_intro}\n{progress}'), loop=bot.loop)
+                    last_edit_time = now
 
             def backup_saves():
                 zip_path = server.backup_saves(on_progress=on_progress)
