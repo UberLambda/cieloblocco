@@ -2,13 +2,15 @@ import pickle
 import os.path
 from pathlib import Path
 from types import SimpleNamespace as Namespace
-from typing import List
+from typing import Callable, List, Optional
+from tqdm.auto import tqdm
 from googleapiclient.http import MediaFileUpload
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from google.oauth2.service_account import Credentials
 from . import env
+from .i18n import tr
 
 
 class GDrive:
@@ -33,7 +35,7 @@ class GDrive:
         files = resp.get('files', [])
         return [Namespace(**f) for f in files]
 
-    def upload_file(self, src: Path, name: str, mime: str = 'application/zip') -> str:
+    def upload_file(self, src: Path, name: str, mime: str = 'application/zip', on_progress: Optional[Callable] = None) -> str:
         cur_files = self.list()
         existing_file = next((f for f in cur_files if f.name == name), None)
 
@@ -44,11 +46,22 @@ class GDrive:
                 parents=[self.root_id],
                 mimeType=mime,
             )
-            resp = self.api.files().create(body=body, media_body=media,
-                                           fields='id').execute()
+            req = self.api.files().create(body=body, media_body=media,
+                                          fields='id')
         else:
             body = {}
-            resp = self.api.files().update(body=body, media_body=media, fileId=existing_file.id,
-                                           fields='id').execute()
+            req = self.api.files().update(body=body, media_body=media, fileId=existing_file.id,
+                                          fields='id')
+
+        on_progress = on_progress if on_progress is not None else (lambda *args, **kwargs: None)
+
+        with tqdm(total=100, leave=False, ncols=200, unit='%', desc=tr("Upload")) as pbar:
+            resp = None
+            while resp is None:
+                status, resp = req.next_chunk()
+                if status:
+                    progress = status.progress() * 100.0
+                    pbar.update(progress - pbar.n)
+                    on_progress(pbar)
 
         return resp.get('id')

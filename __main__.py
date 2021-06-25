@@ -48,7 +48,7 @@ try:
 
             def backup_saves():
                 zip_path = server.backup_saves(on_progress=on_progress)
-                gdrive.upload_file(zip_path, zip_path.name)
+                gdrive.upload_file(zip_path, zip_path.name, on_progress=on_progress)
                 backup_done.set()
 
             backup_thread = threading.Thread(target=backup_saves)
