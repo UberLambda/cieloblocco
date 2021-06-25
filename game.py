@@ -218,12 +218,12 @@ class Server:
         to_backup.sort(key=lambda tup: tup[0])
         on_progress = on_progress if on_progress is not None else (lambda *args, **kwargs: None)
 
-        progress = tqdm(total=total_src_size, leave=False, ncols=200, unit='B', unit_scale=True)
+        progress = tqdm(total=total_src_size, leave=False, ncols=120, unit='B', unit_scale=True)
         with zipfile.ZipFile(out_path, mode='w') as zipf, progress:
             for src, src_size, dst in to_backup:
                 progress.set_description_str(dst)
                 zipf.write(src, dst)
-                progress.update(src_size)
+                progress.update(round(src_size, 2))
                 on_progress(progress)
 
         return out_path

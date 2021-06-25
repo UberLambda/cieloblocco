@@ -55,7 +55,7 @@ class GDrive:
 
         on_progress = on_progress if on_progress is not None else (lambda *args, **kwargs: None)
 
-        with tqdm(total=100, leave=False, ncols=200, unit='%', desc=tr("Upload")) as pbar:
+        with tqdm(total=100, leave=False, ncols=120, unit='%', desc=tr("Upload")) as pbar:
             resp = None
             while resp is None:
                 status, resp = req.next_chunk()
