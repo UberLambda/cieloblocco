@@ -18,6 +18,8 @@ try:
     server = Server()
     bot = Bot(server=server)
 
+    env.load_from_args()
+
     async def main():
         await bot.is_ready.wait()
 
@@ -30,12 +32,16 @@ try:
             await bot.on_server_done(exitcode, stderr)
 
         if exitcode == 0:
-            msg = await bot.message(tr("Backing up saves: {save}", save=server.save_folder.name))
+            msg_intro = tr("Backing up saves: {save}", save=server.save_folder.name)
+            msg = await bot.message(msg_intro)
 
             backup_done = asyncio.Event()
 
+            def on_progress(progress):
+                asyncio.ensure_future(msg.edit(content=f'{msg_intro}\n{progress}'), loop=bot.loop)
+
             def backup_saves():
-                zip_path = server.backup_saves()
+                zip_path = server.backup_saves(on_progress=on_progress)
                 gdrive.upload_file(zip_path, zip_path.name)
                 backup_done.set()
 
@@ -51,6 +57,10 @@ try:
 
     bot.loop.create_task(main())
     bot.run()
+
+except SystemExit:
+    raise
+
 except:
     log.exception("Exception caught, exiting")
     sys.exit(1)

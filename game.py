@@ -7,7 +7,8 @@ import zipfile
 import tempfile
 from collections import namedtuple
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Callable, Optional, Tuple
+from tqdm.auto import tqdm
 from . import env
 
 log = logging.getLogger()
@@ -198,15 +199,31 @@ class Server:
             log.error("Server failed to stop in time, killing it")
             self.process.kill()
 
-    def backup_saves(self, format: str = 'zip') -> Path:
+    def backup_saves(self, format: str = 'zip', on_progress: Optional[Callable] = None) -> Path:
         base_name = self.save_folder.name
         in_dir = self.server_path / self.save_folder
         out_path = Path(tempfile.gettempdir()) / f'{base_name}.zip'
 
-        with zipfile.ZipFile(out_path, mode='w') as zipf:
-            for root, dirnames, filenames in os.walk(in_dir):
-                rel_root = os.path.relpath(root, in_dir)
-                for f in filenames:
-                    zipf.write(Path(root) / f, f'{base_name}/{rel_root}/{f}')
+        to_backup = []
+        total_src_size = 0
+        for root, dirnames, filenames in os.walk(in_dir):
+            rel_root = os.path.relpath(root, in_dir)
+            for f in filenames:
+                src_path = Path(root) / f
+                src_size = src_path.stat().st_size
+                total_src_size += src_size
+                dst_path = f'{base_name}/{rel_root}/{f}'
+                to_backup.append((src_path, src_size, dst_path))
+
+        to_backup.sort(key=lambda tup: tup[0])
+        on_progress = on_progress if on_progress is not None else (lambda *args, **kwargs: None)
+
+        progress = tqdm(total=total_src_size, leave=False, ncols=80, unit='B', unit_scale=True)
+        with zipfile.ZipFile(out_path, mode='w') as zipf, progress:
+            for src, src_size, dst in to_backup:
+                progress.set_description_str(dst)
+                zipf.write(src, dst)
+                progress.update(src_size)
+                on_progress(progress)
 
         return out_path
